@@ -1,0 +1,22 @@
+{
+  "name": "sample-bank-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://phd3hc@dev.azure.com/phd3hc/sample-bank-api/_git/sample-bank-api"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "did-core-sdk": "file:did-core-sdk-1.0.0.tgz",
+    "express": "^5.1.0"
+  }
+}
