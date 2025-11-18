@@ -124,77 +124,79 @@ app.get("/login_nonce", async (req, res) => {
 });
 
 // POST /login  body: { username, password, nonce }
-app.post("/login", async (req, res) => {
-  const { msg } = req.body || {};
+app.get("/login", async (req, res) => {
+  try {
+    const { msg } = req.body || {};
 
-  if (!msg) {
-    return res.status(400).json({
-      error: "Missing 'msg' in request body",
-    });
-  }
+    if (!msg) {
+      return res.status(400).json({
+        error: "Missing 'msg' in request body",
+      });
+    }
 
-  const { vp } = await decrypt(PUBLIC_KEY, PRIVATE_KEY, msg);
+    const { vp } = await decrypt(PUBLIC_KEY, PRIVATE_KEY, msg);
 
-  const issuer = vp.verifiableCredential[0]?.issuer;
-  const didReq = vp.holder;
-  const nonce = vp.challenge;
+    const issuer = vp.verifiableCredential[0]?.issuer;
+    const didReq = vp.holder;
+    const nonce = vp.challenge;
 
-  const nonceEntry = pendingNonces.get(didReq);
-  if (!nonceEntry) {
-    return res
-      .status(400)
-      .json({ error: "Nonce not found. Call /login_nonce first." });
-  }
+    const nonceEntry = pendingNonces.get(didReq);
+    if (!nonceEntry) {
+      return res
+        .status(400)
+        .json({ error: "Nonce not found. Call /login_nonce first." });
+    }
 
-  const didOri =
-    nonceEntry.didOri == didReq ? didReq : vp.verifiableCredential[0]?.issuer;
+    const didOri =
+      nonceEntry.didOri == didReq ? didReq : vp.verifiableCredential[0]?.issuer;
 
-  if (nonceEntry.nonce !== nonce) {
-    return res.status(400).json({ error: "Invalid nonce" });
-  }
+    if (nonceEntry.nonce !== nonce) {
+      return res.status(400).json({ error: "Invalid nonce" });
+    }
 
-  if (Date.now() > nonceEntry.expiresAt) {
+    if (Date.now() > nonceEntry.expiresAt) {
+      pendingNonces.delete(didReq);
+      return res.status(400).json({ error: "Nonce expired" });
+    }
+
+    //Verify VP
+    const {
+      holder: vp_holder,
+      issuer: vp_issuer,
+      parentIssuer,
+      credentialSubjects,
+    } = await verifyVP(vp, nonce);
+    //TODO: Check holder & issuer
+
+    const stmt = db.prepare("SELECT id, username FROM users WHERE did = ?");
+    const user = stmt.get(didOri);
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid username." });
+    }
+
+    // Xoá nonce sau khi dùng
     pendingNonces.delete(didReq);
-    return res.status(400).json({ error: "Nonce expired" });
+
+    addLog(
+      didReq,
+      didOri,
+      user.id,
+      "LOGIN_SUCCESS",
+      req.ip,
+      "User logged in successfully"
+    );
+
+    return res.json({
+      message: "Login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+      },
+    });
+  } catch (err) {
+    return res.status(404).json({ error: err });
   }
-
-  //Verify VP
-  /*
-  const {
-    holder: vp_holder,
-    issuer: vp_issuer,
-    parentIssuer,
-    credentialSubjects,
-  } = await verifyVP(vp, nonce);
-  //TODO: Check holder & issuer
-  */
-
-  const stmt = db.prepare("SELECT id, username FROM users WHERE did = ?");
-  const user = stmt.get(didOri);
-
-  if (!user) {
-    return res.status(401).json({ error: "Invalid username." });
-  }
-
-  // Xoá nonce sau khi dùng
-  pendingNonces.delete(didReq);
-
-  addLog(
-    didReq,
-    didOri,
-    user.id,
-    "LOGIN_SUCCESS",
-    req.ip,
-    "User logged in successfully"
-  );
-
-  return res.json({
-    message: "Login successful",
-    user: {
-      id: user.id,
-      username: user.username,
-    },
-  });
 });
 
 // GET /users - lấy tất cả user
