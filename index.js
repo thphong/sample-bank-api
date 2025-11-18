@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import { encrypt, decrypt, verifyVP } from "did-core-sdk";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 //Todo: Need to read from Registry
 const PRIVATE_KEY = "KkMJ1Pb_Z7QhMlM5PpsrfgsBTo_kDF1yIlLt818WIbg";
 const PUBLIC_KEY = "esQN45b1Jny4apXOzkqojviwguOsZRNvZh6AXPeDjhY";
@@ -122,7 +122,6 @@ app.get("/login_nonce", async (req, res) => {
 
   return res.json({ resMsg });
 });
-
 
 // POST /login  body: { username, password, nonce }
 app.post("/login", async (req, res) => {
