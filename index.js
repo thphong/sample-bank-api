@@ -124,7 +124,7 @@ app.get("/login_nonce", async (req, res) => {
 });
 
 // POST /login  body: { username, password, nonce }
-app.get("/login", async (req, res) => {
+app.post("/login", async (req, res) => {
   try {
     const { msg } = req.body || {};
 
