@@ -1,0 +1,37 @@
+import { DatabaseSync } from "node:sqlite";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Khởi tạo SQLite dùng module built-in của Node 22
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dbPath = path.join(__dirname, "app.db");
+const db = new DatabaseSync(dbPath);
+
+// Tạo bảng nếu chưa có
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    did TEXT UNIQUE NOT NULL,
+    username TEXT UNIQUE NOT NULL,
+    fullname TEXT NOT NULL,
+    dob DATE NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    didReq TEXT, 
+    didOri TEXT,
+    user_id INTEGER,
+    action TEXT NOT NULL,
+    ip TEXT,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+`);
+
+export default db;
