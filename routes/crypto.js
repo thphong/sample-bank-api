@@ -11,7 +11,7 @@ router.get("/encrypt", async (req, res) => {
     res.json({ msg: enc });
   } catch (err) {
     console.error("Error fetching users:", err);
-    res.status(500).json({ error: "Database error" });
+    res.status(500).json({ error: err });
   }
 });
 
@@ -23,7 +23,7 @@ router.get("/decrypt", async (req, res) => {
     res.json({ objs: dec });
   } catch (err) {
     console.error("Error fetching users:", err);
-    res.status(500).json({ error: "Database error" });
+    res.status(500).json({ error: err });
   }
 });
 

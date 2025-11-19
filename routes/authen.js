@@ -10,6 +10,7 @@ const router = express.Router();
 
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const didBank = process.env.didBank;
 const pendingNonces = new Map();
 
 // GET /login_nonce?username=...
@@ -67,7 +68,6 @@ router.post("/login", async (req, res) => {
 
     const { vp } = await decrypt(PUBLIC_KEY, PRIVATE_KEY, msg);
 
-    const issuer = vp.verifiableCredential[0]?.issuer;
     const didReq = vp.holder;
     const nonce = vp.challenge;
 
@@ -77,9 +77,6 @@ router.post("/login", async (req, res) => {
         .status(400)
         .json({ error: "Nonce not found. Call /login_nonce first." });
     }
-
-    const didOri =
-      nonceEntry.didOri == didReq ? didReq : vp.verifiableCredential[0]?.issuer;
 
     if (nonceEntry.nonce !== nonce) {
       return res.status(400).json({ error: "Invalid nonce" });
@@ -91,13 +88,20 @@ router.post("/login", async (req, res) => {
     }
 
     //Verify VP
-    const {
-      holder: vp_holder,
-      issuer: vp_issuer,
-      parentIssuer,
-      credentialSubjects,
-    } = await verifyVP(vp, nonce);
-    //TODO: Check holder & issuer
+    const { holder, issuer, parentIssuer, credentialSubjects } = await verifyVP(
+      vp,
+      nonce
+    );
+    const didOri = parentIssuer ? issuer : holder;
+    if (didOri == didReq) {
+      if (issuer != didBank) {
+        return res.status(400).json({ error: "VP is not issued by bank" });
+      }
+    } else {
+      if (parentIssuer != didBank) {
+        return res.status(400).json({ error: "VP is not issued by bank" });
+      }
+    }
 
     const stmt = db.prepare("SELECT id, username FROM users WHERE did = ?");
     const user = stmt.get(didOri);
