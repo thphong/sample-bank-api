@@ -68,7 +68,7 @@ router.post("/login", async (req, res) => {
 
     const { vp } = await decrypt(PUBLIC_KEY, PRIVATE_KEY, msg);
 
-    console.log('vp', vp);
+    console.log('vp ', vp);
 
     const didReq = vp.holder;
     const nonce = vp.challenge;
