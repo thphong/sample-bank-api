@@ -68,6 +68,8 @@ router.post("/login", async (req, res) => {
 
     const { vp } = await decrypt(PUBLIC_KEY, PRIVATE_KEY, msg);
 
+    console.log('vp', vp);
+
     const didReq = vp.holder;
     const nonce = vp.challenge;
 
@@ -87,12 +89,20 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Nonce expired" });
     }
 
+    console.log('verifyVP');
+
     //Verify VP
     const { holder, issuer, parentIssuer, credentialSubjects } = await verifyVP(
       vp,
       nonce
     );
     const didOri = parentIssuer ? issuer : holder;
+    console.log('didOri', didOri);
+    
+    if (nonceEntry.didOri !== didOri) {
+      return res.status(400).json({ error: "Invalid didOri" });
+    }
+
     if (didOri == didReq) {
       if (issuer != didBank) {
         return res.status(400).json({ error: "VP is not issued by bank" });
@@ -105,6 +115,8 @@ router.post("/login", async (req, res) => {
 
     const stmt = db.prepare("SELECT id, username FROM users WHERE did = ?");
     const user = stmt.get(didOri);
+
+    console.log('GetUser');
 
     if (!user) {
       return res.status(401).json({ error: "Invalid username." });
@@ -130,6 +142,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
+    console.error("Error", err);
     return res.status(404).json({ error: err });
   }
 });
