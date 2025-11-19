@@ -16,7 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "did-core-sdk": "file:did-core-sdk-1.0.0.tgz",
+    "did-core-sdk": "file:did-core-sdk-1.0.1.tgz",
     "dotenv": "^17.2.3",
     "express": "^5.1.0"
   }
