@@ -27,7 +27,7 @@ router.get("/decrypt", async (req, res) => {
   }
 });
 
-router.get("/makevp", async (req, res) => {
+router.get("/make-vp", async (req, res) => {
   try {
     const { vcs, holderDid, holderPrivateKeyJwk, nonce } = req.body || {};
 

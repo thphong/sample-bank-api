@@ -18,7 +18,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 3600; // seconds
 const pendingNonces = new Map();
 
 // GET /login_nonce?username=...
-router.get("/login_nonce", async (req, res) => {
+router.get("/nonce", async (req, res) => {
   const { msg } = req.body || {};
   if (!msg) {
     return res.status(400).json({
@@ -60,7 +60,7 @@ router.get("/login_nonce", async (req, res) => {
 });
 
 // POST /login  body: { username, password, nonce }
-router.post("/login", async (req, res) => {
+router.get("/access-token", async (req, res) => {
   try {
     const { msg } = req.body || {};
 
