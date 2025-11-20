@@ -14,6 +14,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const didBank = process.env.didBank;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 3600; // seconds
+const roles = JSON.parse(process.env.ROLES);
 
 const pendingNonces = new Map();
 
@@ -133,7 +134,11 @@ router.get("/access-token", async (req, res) => {
     const payload = {
       sub: user.id, // subject (user id)
       username: user.username, // thêm thông tin cần thiết
-      roles: credentialSubjects, // optional
+      roles: Object.fromEntries(
+        Object.entries(credentialSubjects).filter(([key]) =>
+          roles.includes(key)
+        )
+      ), // optional
       // có thể thêm claim khác: scope, client_id, ...
     };
 
