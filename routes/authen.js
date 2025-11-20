@@ -131,24 +131,26 @@ router.get("/access-token", async (req, res) => {
     //   },
     // });
 
-    console.log("credentialSubjects", credentialSubjects);
-    console.log(
-      "new object",
-      Object.fromEntries(
-        Object.entries(credentialSubjects).filter(([key]) =>
-          roles.includes(key)
-        )
+    if (!credentialSubjects || !credentialSubjects.length) {
+      return res.status(401).json({ error: "Invalid credential subjects" });
+    }
+
+    const allowedRoles = Object.fromEntries(
+      Object.entries(credentialSubjects[0]).filter(([key]) =>
+        roles.includes(key)
       )
     );
+
+    if (allowedRoles.length === 0) {
+      return res
+        .status(401)
+        .json({ error: "No property found that matches allowed roles" });
+    }
 
     const payload = {
       sub: user.id, // subject (user id)
       username: user.username, // thêm thông tin cần thiết
-      roles: Object.fromEntries(
-        Object.entries(credentialSubjects).filter(([key]) =>
-          roles.includes(key)
-        )
-      ), // optional
+      roles: allowedRoles, // optional
       // có thể thêm claim khác: scope, client_id, ...
     };
 
