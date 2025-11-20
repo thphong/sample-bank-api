@@ -131,6 +131,16 @@ router.get("/access-token", async (req, res) => {
     //   },
     // });
 
+    console.log("credentialSubjects", credentialSubjects);
+    console.log(
+      "new object",
+      Object.fromEntries(
+        Object.entries(credentialSubjects).filter(([key]) =>
+          roles.includes(key)
+        )
+      )
+    );
+
     const payload = {
       sub: user.id, // subject (user id)
       username: user.username, // thêm thông tin cần thiết
