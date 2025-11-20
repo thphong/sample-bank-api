@@ -1,4 +1,4 @@
-import { encrypt, decrypt } from "did-core-sdk";
+import { encrypt, decrypt, createVP } from "did-core-sdk";
 import express from "express";
 
 const router = express.Router();
@@ -21,6 +21,18 @@ router.get("/decrypt", async (req, res) => {
 
     const dec = await decrypt(publicKey, privateKey, msg);
     res.json({ objs: dec });
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ error: err });
+  }
+});
+
+router.get("/makevp", async (req, res) => {
+  try {
+    const { vcs, holderDid, holderPrivateKeyJwk, nonce } = req.body || {};
+
+    const vp = await createVP(vcs, holderDid, holderPrivateKeyJwk, nonce);
+    res.json({ vp: vp });
   } catch (err) {
     console.error("Error fetching users:", err);
     res.status(500).json({ error: err });

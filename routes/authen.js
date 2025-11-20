@@ -1,4 +1,5 @@
 import express from "express";
+import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { encrypt, decrypt, verifyVP } from "did-core-sdk";
 import { addLog } from "./log.js";
@@ -11,6 +12,9 @@ const router = express.Router();
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const didBank = process.env.didBank;
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 3600; // seconds
+
 const pendingNonces = new Map();
 
 // GET /login_nonce?username=...
@@ -68,8 +72,6 @@ router.post("/login", async (req, res) => {
 
     const { vp } = await decrypt(PUBLIC_KEY, PRIVATE_KEY, msg);
 
-    console.log('vp', vp);
-
     const didReq = vp.holder;
     const nonce = vp.challenge;
 
@@ -89,16 +91,13 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Nonce expired" });
     }
 
-    console.log('verifyVP');
-
     //Verify VP
     const { holder, issuer, parentIssuer, credentialSubjects } = await verifyVP(
       vp,
       nonce
     );
     const didOri = parentIssuer ? issuer : holder;
-    console.log('didOri', didOri);
-    
+
     if (nonceEntry.didOri !== didOri) {
       return res.status(400).json({ error: "Invalid didOri" });
     }
@@ -116,8 +115,6 @@ router.post("/login", async (req, res) => {
     const stmt = db.prepare("SELECT id, username FROM users WHERE did = ?");
     const user = stmt.get(didOri);
 
-    console.log('GetUser');
-
     if (!user) {
       return res.status(401).json({ error: "Invalid username." });
     }
@@ -125,21 +122,41 @@ router.post("/login", async (req, res) => {
     // Xoá nonce sau khi dùng
     pendingNonces.delete(didReq);
 
+    // return res.json({
+    //   message: "Login successful",
+    //   user: {
+    //     id: user.id,
+    //     username: user.username,
+    //   },
+    // });
+
+    const payload = {
+      sub: user.id, // subject (user id)
+      username: user.username, // thêm thông tin cần thiết
+      roles: credentialSubjects, // optional
+      // có thể thêm claim khác: scope, client_id, ...
+    };
+
+    const accessToken = jwt.sign(payload, JWT_SECRET, {
+      expiresIn: Number(JWT_EXPIRES_IN), // giây
+      issuer: didBank, // optional
+      audience: didReq, // optional
+    });
+
     addLog(
       didReq,
       didOri,
       user.id,
-      "LOGIN_SUCCESS",
+      "ACCESS_TOKEN_ISSUED",
       req.ip,
-      "User logged in successfully"
+      `Access Token issued for requestor=${didReq}, userdid=${didOri}, username=${user.username}`
     );
 
     return res.json({
-      message: "Login successful",
-      user: {
-        id: user.id,
-        username: user.username,
-      },
+      access_token: accessToken,
+      token_type: "Bearer",
+      expires_in: Number(JWT_EXPIRES_IN),
+      // refresh_token: "...",
     });
   } catch (err) {
     console.error("Error", err);
