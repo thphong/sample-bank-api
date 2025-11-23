@@ -19,7 +19,7 @@ const roles = JSON.parse(process.env.ROLES);
 const pendingNonces = new Map();
 
 // GET /login_nonce?username=...
-router.get("/nonce", async (req, res) => {
+router.post("/nonce", async (req, res) => {
   const { msg } = req.body || {};
   if (!msg) {
     return res.status(400).json({
@@ -61,7 +61,7 @@ router.get("/nonce", async (req, res) => {
 });
 
 // POST /login  body: { username, password, nonce }
-router.get("/access-token", async (req, res) => {
+router.post("/access-token", async (req, res) => {
   try {
     const { msg } = req.body || {};
 
