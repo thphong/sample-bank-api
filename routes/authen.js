@@ -20,44 +20,55 @@ const pendingNonces = new Map();
 
 // GET /login_nonce?username=...
 router.post("/nonce", async (req, res) => {
-  const { msg } = req.body || {};
-  if (!msg) {
-    return res.status(400).json({
-      error: "Missing 'msg' in request body",
+  try {
+    const { msg } = req.body || {};
+    if (!msg) {
+      return res.status(400).json({
+        error: "Missing 'msg' in request body",
+      });
+    }
+
+    const { didReq, didOri, pkReq } = await decrypt(
+      PUBLIC_KEY,
+      PRIVATE_KEY,
+      msg
+    );
+
+    const stmt = db.prepare("SELECT id,username FROM users WHERE did = ?");
+    const user = stmt.get(didOri);
+
+    if (!user) {
+      return res.status(404).json({ error: "User account not found" });
+    }
+
+    const nonce = crypto.randomBytes(16).toString("hex");
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 phút
+
+    pendingNonces.set(didReq, { didOri, nonce, expiresAt });
+
+    addLog(
+      didReq,
+      didOri,
+      user.id,
+      "LOGIN_NONCE_ISSUED",
+      req.ip,
+      `Nonce issued for requestor=${didReq}, userdid=${didOri}, username=${user.username}`
+    );
+
+    const resMsg = await encrypt(pkReq, {
+      didReq,
+      didOri,
+      nonce,
+      expires_in_seconds: 300,
+    });
+
+    return res.json({ resMsg });
+  } catch (error) {
+    console.error("error: ", error);
+    return res.status(404).json({
+      error: "Internal Error",
     });
   }
-
-  const { didReq, didOri, pkReq } = await decrypt(PUBLIC_KEY, PRIVATE_KEY, msg);
-
-  const stmt = db.prepare("SELECT id,username FROM users WHERE did = ?");
-  const user = stmt.get(didOri);
-
-  if (!user) {
-    return res.status(404).json({ error: "User account not found" });
-  }
-
-  const nonce = crypto.randomBytes(16).toString("hex");
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 phút
-
-  pendingNonces.set(didReq, { didOri, nonce, expiresAt });
-
-  addLog(
-    didReq,
-    didOri,
-    user.id,
-    "LOGIN_NONCE_ISSUED",
-    req.ip,
-    `Nonce issued for requestor=${didReq}, userdid=${didOri}, username=${user.username}`
-  );
-
-  const resMsg = await encrypt(pkReq, {
-    didReq,
-    didOri,
-    nonce,
-    expires_in_seconds: 300,
-  });
-
-  return res.json({ resMsg });
 });
 
 // POST /login  body: { username, password, nonce }
@@ -176,8 +187,10 @@ router.post("/access-token", async (req, res) => {
       // refresh_token: "...",
     });
   } catch (err) {
-    console.error("Error", err);
-    return res.status(404).json({ error: err });
+    console.error("error: ", error);
+    return res.status(404).json({
+      error: "Internal Error",
+    });
   }
 });
 
