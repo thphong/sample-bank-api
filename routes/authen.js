@@ -186,7 +186,7 @@ router.post("/access-token", async (req, res) => {
       expires_in: Number(JWT_EXPIRES_IN),
       // refresh_token: "...",
     });
-  } catch (err) {
+  } catch (error) {
     console.error("error: ", error);
     return res.status(404).json({
       error: "Internal Error",
