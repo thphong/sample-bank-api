@@ -8,6 +8,7 @@ import {
   jsonToArrayBuffer,
   convert2PrivateJsonWebKey,
   convert2PublicJsonWebKey,
+  b64uToArrBuf
 } from "did-core-sdk";
 import { addLog } from "./log.js";
 import db from "../db.js";
@@ -108,7 +109,7 @@ router.post("/request", async (req, res) => {
     //Verify VP
     const checkSign = await verify(
       jsonToArrayBuffer({ didReq, nonce }),
-      signReq,
+      b64uToArrBuf(signReq),
       convert2PublicJsonWebKey(PUBLIC_KEY)
     );
 
