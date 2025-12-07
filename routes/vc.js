@@ -146,7 +146,7 @@ router.post("/request", async (req, res) => {
       {
         issuer: didBank,
         subject: didReq,
-        expirationDate: (
+        expirationDate: new Date(
           Date.now() +
           Number(VC_EXPIRES_IN) * 1000
         ).toISOString(),
