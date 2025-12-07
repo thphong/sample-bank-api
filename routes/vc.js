@@ -7,8 +7,8 @@ import {
   createVC,
   jsonToArrayBuffer,
   convert2PrivateJsonWebKey,
-  convert2PublicJsonWebKey,
-  b64uToArrBuf
+  b64uToArrBuf,
+  resolveDid
 } from "did-core-sdk";
 import { addLog } from "./log.js";
 import db from "../db.js";
@@ -106,11 +106,17 @@ router.post("/request", async (req, res) => {
       return res.status(400).json({ error: "Nonce expired" });
     }
 
+    const didDocument = await resolveDid(didReq);
+
+    if (!didDocument) {
+      return res.status(403).json({ error: "Can't resolve did document" });
+    }
+
     //Verify VP
     const checkSign = await verify(
       jsonToArrayBuffer({ didReq, nonce }),
       b64uToArrBuf(signReq),
-      convert2PublicJsonWebKey(PUBLIC_KEY)
+      didDocument.verificationMethod[0].publicKeyJwk
     );
 
     const stmt = db.prepare("SELECT id, username FROM users WHERE did = ?");
