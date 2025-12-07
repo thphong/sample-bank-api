@@ -15,6 +15,8 @@ db.exec(`
     did TEXT UNIQUE NOT NULL,
     username TEXT UNIQUE NOT NULL,
     fullname TEXT NOT NULL,
+    account_number TEXT NOT NULL,
+    balance NUMERIC(18,2) NOT NULL,
     dob DATE NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );

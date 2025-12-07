@@ -1,6 +1,7 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import db from "../db.js";
 dotenv.config(); // nếu chạy local
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -29,19 +30,21 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// API public (không cần token)
-router.get("/public", (req, res) => {
-  res.json({ message: "This is public resource" });
-});
 
 // API protected (cần token)
 router.get("/me", authenticateToken, (req, res) => {
   // req.user được gắn trong middleware authenticateToken
+
+  const stmt = db.prepare("SELECT * FROM users WHERE id = ?");
+  const user = stmt.get(req.user.sub);
+
   res.json({
-    message: "Protected resource",
     user: {
-      id: req.user.sub,
-      username: req.user.username,
+      id: user.id,
+      username: user.username,
+      fullname: user.fullname,
+      account_number: user.account_number,
+      balance: user.balance,
       roles: req.user.roles,
     },
   });

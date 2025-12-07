@@ -7,7 +7,14 @@ import resourceRouter from "./routes/resource.js";
 import vcRouter from "./routes/vc.js";
 
 const app = express();
+import cors from 'cors';
 const PORT = process.env.PORT || 3000;
+
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://sample-bank-website.vercel.app'],      // hoặc mảng origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['accept', 'content-type', 'Authorization']
+}));
 
 app.use(express.json());
 

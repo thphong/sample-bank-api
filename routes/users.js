@@ -17,27 +17,29 @@ router.get("/", (req, res) => {
 
 // API: tạo user mới hoặc update nếu username đã tồn tại
 router.post("/", (req, res) => {
-  const { did, username, fullname, dob } = req.body;
+  const { did, username, fullname, dob, account_number, balance } = req.body;
 
-  if (!did || !username || !fullname || !dob) {
+  if (!did || !username || !fullname || !dob || !account_number || !balance) {
     return res.status(400).json({
-      error: "did, username, fullname, dob are required",
+      error: "did, username, fullname, dob, account_number, balance are required",
     });
   }
 
   try {
     // Dùng UPSERT của SQLite (ON CONFLICT)
     const stmt = db.prepare(`
-      INSERT INTO users (did, username, fullname, dob)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO users (did, username, fullname, dob, account_number, balance)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(username)
       DO UPDATE SET
         did = excluded.did,
         fullname = excluded.fullname,
-        dob = excluded.dob
+        dob = excluded.dob,
+        account_number = excluded.account_number,
+        balance = excluded.balance
     `);
 
-    stmt.run(did, username, fullname, dob);
+    stmt.run(did, username, fullname, dob, account_number, balance);
 
     // Lấy lại record đã insert/update
     const user = db

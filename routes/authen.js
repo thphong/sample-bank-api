@@ -72,7 +72,7 @@ router.post("/nonce", async (req, res) => {
   }
 });
 
-// POST /login  body: { username, password, nonce }
+// POST /login  body: { username, nonce }
 router.post("/access-token", async (req, res) => {
   try {
     const { msg } = req.body || {};
