@@ -14,6 +14,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const didBank = process.env.didBank;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 3600; // seconds
+const NONCE_EXPIRES_IN = process.env.NONCE_EXPIRES_IN || 300; // seconds
 const roles = JSON.parse(process.env.ROLES);
 
 const pendingNonces = new Map();
@@ -42,7 +43,7 @@ router.post("/nonce", async (req, res) => {
     }
 
     const nonce = crypto.randomBytes(16).toString("hex");
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 phút
+    const expiresAt = Date.now() + Number(NONCE_EXPIRES_IN) * 1000;
 
     pendingNonces.set(didReq, { didOri, nonce, expiresAt });
 
@@ -59,7 +60,7 @@ router.post("/nonce", async (req, res) => {
       didReq,
       didOri,
       nonce,
-      expires_in_seconds: 300,
+      expires_in_seconds: Number(NONCE_EXPIRES_IN),
     });
 
     return res.json({ resMsg });
@@ -91,7 +92,7 @@ router.post("/access-token", async (req, res) => {
     if (!nonceEntry) {
       return res
         .status(400)
-        .json({ error: "Nonce not found. Call /login_nonce first." });
+        .json({ error: "Nonce not found. Call auth/nonce first." });
     }
 
     if (nonceEntry.nonce !== nonce) {
