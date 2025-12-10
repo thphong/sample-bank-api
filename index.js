@@ -8,12 +8,21 @@ import vcRouter from "./routes/vc.js";
 
 const app = express();
 import cors from 'cors';
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./swagger.js"; 
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({
   origin: ['http://localhost:5173', 'https://sample-bank-website.vercel.app'],      // hoặc mảng origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['accept', 'content-type', 'Authorization']
+}));
+
+//Swagger UI route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  swaggerOptions: {
+    persistAuthorization: true
+  }
 }));
 
 app.use(express.json());

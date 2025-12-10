@@ -19,7 +19,72 @@ const roles = JSON.parse(process.env.ROLES);
 
 const pendingNonces = new Map();
 
-// GET /login_nonce?username=...
+/**
+ * @openapi
+ * /auth/nonce:
+ *   post:
+ *     summary: Cấp nonce phục vụ quy trình đăng nhập SSI (VC/VP)
+ *     description: >
+ *       Endpoint này nhận một thông điệp đã mã hoá `msg` từ client.
+ *       Server giải mã để lấy `didReq`, `didOri` và `pkReq`, sau đó:
+ *       - Kiểm tra DID gốc (`didOri`) có tồn tại trong hệ thống
+ *       - Sinh nonce và lưu tạm thời trong server (in-memory)
+ *       - Gửi lại response đã mã hoá bằng `pkReq`, chứa `didReq`, `didOri`, `nonce`, TTL
+ *
+ *       Nonce dùng cho bước xác thực VP tại `/auth/access-token`.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - msg
+ *             properties:
+ *               msg:
+ *                 type: string
+ *                 description: Thông điệp đã mã hóa chứa DID requestor và requester public key
+ *                 example: "eyJhbGciOiJFZG... (encrypted)"
+ *     responses:
+ *       200:
+ *         description: Nonce được cấp thành công và đã được mã hoá trả về trong `resMsg`.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resMsg:
+ *                   type: string
+ *                   example: "eyJhbGciOiJFZG... (encrypted payload)"
+ *       400:
+ *         description: Request body thiếu hoặc không đúng định dạng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Missing 'msg' in request body"
+ *       404:
+ *         description: DID người dùng không tồn tại hoặc lỗi hệ thống.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   examples:
+ *                     userNotFound:
+ *                       summary: Không có user tương ứng
+ *                       value: "User account not found"
+ *                     internalError:
+ *                       summary: Lỗi server
+ *                       value: "Internal Error"
+ */
 router.post("/nonce", async (req, res) => {
   try {
     const { msg } = req.body || {};
@@ -72,7 +137,112 @@ router.post("/nonce", async (req, res) => {
   }
 });
 
-// POST /login  body: { username, nonce }
+/**
+ * @openapi
+ * /auth/access-token:
+ *   post:
+ *     summary: Xác minh VP + nonce để cấp JWT Access Token
+ *     description: >
+ *       Endpoint này giải mã `msg` để lấy `vp` (Verifiable Presentation).
+ *       Server thực hiện các bước:
+ *
+ *       - Lấy `holder` (didReq) và `challenge` (nonce) từ VP
+ *       - Kiểm tra nonce khớp và chưa hết hạn
+ *       - Verify VP bằng chuẩn DID + issuer chain
+ *       - Xác định DID gốc `didOri` (trường hợp delegated VC → `parentIssuer`)
+ *       - Check issuer phải là `didBank`
+ *       - Lọc roles trong VC theo danh sách được phép (`roles`)
+ *       - Sinh JWT access token và trả về
+ *
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - msg
+ *             properties:
+ *               msg:
+ *                 type: string
+ *                 description: Thông điệp đã mã hóa chứa VP
+ *                 example: "eyJhbGciOiJFZERTQSJ9... (encrypted)"
+ *
+ *     responses:
+ *       200:
+ *         description: Đăng nhập SSI thành công, JWT Access Token được cấp.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 access_token:
+ *                   type: string
+ *                   description: JWT access token theo chuẩn Bearer
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 token_type:
+ *                   type: string
+ *                   example: "Bearer"
+ *                 expires_in:
+ *                   type: number
+ *                   example: 3600
+ *       400:
+ *         description: Nonce hoặc VP không hợp lệ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   examples:
+ *                     nonceNotFound:
+ *                       summary: Chưa yêu cầu nonce
+ *                       value: "Nonce not found. Call auth/nonce first."
+ *                     invalidNonce:
+ *                       summary: Nonce sai
+ *                       value: "Invalid nonce"
+ *                     nonceExpired:
+ *                       summary: Nonce hết hạn
+ *                       value: "Nonce expired"
+ *                     invalidDidOri:
+ *                       summary: didOri không khớp
+ *                       value: "Invalid didOri"
+ *                     invalidIssuer:
+ *                       summary: Ngân hàng không phải issuer
+ *                       value: "VP is not issued by bank"
+ *       401:
+ *         description: VC/VP hợp lệ nhưng không có roles phù hợp.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   examples:
+ *                     invalidUser:
+ *                       summary: DID không map với user
+ *                       value: "Invalid username."
+ *                     invalidSubjects:
+ *                       summary: credentialSubjects không hợp lệ
+ *                       value: "Invalid credential subjects"
+ *                     noRoles:
+ *                       summary: VC không có quyền phù hợp trong whitelist roles
+ *                       value: "No property found that matches allowed roles"
+ *       404:
+ *         description: Lỗi xử lý hệ thống.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Error"
+ */
 router.post("/access-token", async (req, res) => {
   try {
     const { msg } = req.body || {};
