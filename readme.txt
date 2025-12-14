@@ -1,6 +1,6 @@
 1. Install package
 npm install
-npm install did-core-sdk-1.0.6.tgz
+npm install did-core-sdk-1.0.7.tgz
 
 
 2. Run API
