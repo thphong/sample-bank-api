@@ -132,7 +132,7 @@ router.post("/nonce", async (req, res) => {
   } catch (error) {
     console.error("error: ", error);
     return res.status(404).json({
-      error: "Internal Error",
+      error: error.message,
     });
   }
 });
@@ -360,7 +360,7 @@ router.post("/access-token", async (req, res) => {
   } catch (error) {
     console.error("error: ", error);
     return res.status(404).json({
-      error: "Internal Error",
+      error: error.message,
     });
   }
 });
