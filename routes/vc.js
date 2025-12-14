@@ -329,7 +329,7 @@ router.post("/request", async (req, res) => {
     const vc = await createVC(
       {
         issuer: didBank,
-        subject: didReq,
+        subject: 'did:iota:testnet:0x758020553d11c88e84852c6985b4b6c7015652a0d5cf02fd6489ba8441675e3f',
         expirationDate: new Date(
           Date.now() +
           Number(VC_EXPIRES_IN) * 1000
@@ -341,8 +341,6 @@ router.post("/request", async (req, res) => {
       },
       convert2PrivateJsonWebKey(PUBLIC_KEY, PRIVATE_KEY)
     );
-
-    vc.issuanceDate = '14-Mar-2025'
 
     return res.json({
       vc: vc,
