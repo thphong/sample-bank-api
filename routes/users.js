@@ -19,9 +19,9 @@ router.get("/", (req, res) => {
 router.post("/", (req, res) => {
   const { did, username, fullname, dob, account_number, balance } = req.body;
 
-  if (!did || !username || !fullname || !dob || !account_number || !balance) {
+  if (!did || !username || !fullname || !dob || !account_number) {
     return res.status(400).json({
-      error: "did, username, fullname, dob, account_number, balance are required",
+      error: "did, username, fullname, dob, account_number are required",
     });
   }
 
@@ -39,7 +39,7 @@ router.post("/", (req, res) => {
         balance = excluded.balance
     `);
 
-    stmt.run(did, username, fullname, dob, account_number, balance);
+    stmt.run(did, username, fullname, dob, account_number, balance || 0);
 
     // Lấy lại record đã insert/update
     const user = db
