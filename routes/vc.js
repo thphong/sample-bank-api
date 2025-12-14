@@ -329,7 +329,7 @@ router.post("/request", async (req, res) => {
     const vc = await createVC(
       {
         issuer: didBank,
-        subject: 'did:iota:testnet:0x758020553d11c88e84852c6985b4b6c7015652a0d5cf02fd6489ba8441675e3f',
+        subject: didReq,
         expirationDate: new Date(
           Date.now() +
           Number(VC_EXPIRES_IN) * 1000
