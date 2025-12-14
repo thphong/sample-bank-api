@@ -275,7 +275,7 @@ router.post("/request", async (req, res) => {
     );
 
     const nonceEntry = pendingNonces.get(didReq);
-    if (!nonceEntry) {
+    if (!nonceEntry) { 
       return res
         .status(400)
         .json({ error: "Nonce not found. Call vc/nonce first." });
