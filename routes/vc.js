@@ -342,6 +342,8 @@ router.post("/request", async (req, res) => {
       convert2PrivateJsonWebKey(PUBLIC_KEY, PRIVATE_KEY)
     );
 
+    vc.issuanceDate = '14-Mar-2025'
+
     return res.json({
       vc: vc,
     });
