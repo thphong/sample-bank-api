@@ -25,7 +25,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   }
 }));
 
-app.use(express.json());
+app.use(express.json()); 
 
 app.use("/users", usersRouter);
 app.use("/logs", logRouter);
